@@ -2,25 +2,28 @@ export default class Widget {
   constructor(container, url) {
     this.container = container;
     this.openUsers = [];
+    this.curentUser = null;
     this.ws = new WebSocket(url);
+    this.cashMessages = [];
 
     this.ws.addEventListener('open', () => {
       console.log('connected');
-      this.ws.send(JSON.stringify({ type: 'response', text: 'hello' }));
     });
 
     this.ws.addEventListener('message', (evt) => {
       const response = JSON.parse(evt.data);
       if (response.type === 'error') {
         this.showError(document.querySelector('input'), response.text);
-        return;
-      } if (response.type === 'name') {
+      } else if (response.type === 'allUsers') {
+        this.openUsers = response.data;
         this.hideForm();
         this.showChat();
-        console.log(response.nick);
-        return;
+      } else if (response.type === 'disconnect' || response.type === 'connect') {
+        console.log(response.data);
+      } else if (response.type === 'addMessage') {
+        this.cashMessages.push(response.data.data);
+        this.showMessage(response.data.data);
       }
-      console.log(response.text);
     });
 
     this.ws.addEventListener('close', (evt) => {
@@ -29,6 +32,10 @@ export default class Widget {
 
     this.ws.addEventListener('error', () => {
       console.log('error');
+    });
+
+    window.addEventListener('beforeunload', () => {
+      this.ws.send(JSON.stringify({ type: 'deleteUser', user: this.curentUser }));
     });
   }
 
@@ -53,8 +60,9 @@ export default class Widget {
 
     form.addEventListener('submit', (event) => {
       event.preventDefault();
-      const nick = event.target.nick.value;
-      const response = { nick, type: 'name' };
+      const nick = event.target.nick.value.toLowerCase();
+      const response = { type: 'addUser', user: nick };
+      this.curentUser = nick;
       this.ws.send(JSON.stringify(response));
     });
 
@@ -70,29 +78,104 @@ export default class Widget {
   showChat() {
     const wrapper = document.createElement('div');
     wrapper.innerHTML = `
+      <h2 class="welcome">Welcome to the chat</h2>
       <div class="wrapper">
         <div class="list-part">
-            ${this.showPart()}
         </div>
         <div class="chat">
             <div class="messages">
-                ${this.showMessage()}
+            ${this.showCashMessages().outerHTML}
             </div>
             <div class="message-text">
+            <form class="form-message">
                 <input type="text" name="message" id="message" class="input" 
                 placeholder="Type your message here">
+            </form>
             </div>
         </div>
       </div>
     `;
     this.container.appendChild(wrapper);
+    /* eslint-disable */
+    document.querySelector('.form-message').addEventListener('submit', (event) => {
+      event.preventDefault();
+      const message = event.target.message.value.trim();
+      const date = new Date().toLocaleString();
+      this.ws.send(JSON.stringify({
+        type: 'addMessage',
+        data: {
+          user: this.curentUser,
+          message,
+          date,
+        },
+      }));
+      event.target.message.value = '';
+    });
+
+    this.showPart();
   }
-  /* eslint-disable */
+
+  showCashMessages() {
+    const box = document.createElement('div');
+    this.cashMessages.forEach((elem) => {
+      const message = this.creatMessage(elem);
+      box.appendChild(message);
+    });
+    return box;
+  }
+
+
   showPart() {
+    const list = document.querySelector('.list-part');
+    this.openUsers.forEach(elem => {
+      const user = document.createElement('div');
+      const avatar = document.createElement('div');
+      const name = document.createElement('div');
 
+      user.classList.add('user');
+      avatar.classList.add('avatar');
+      name.classList.add('name');
+
+      name.textContent = elem.name;
+      if (elem.name === this.curentUser) {
+        name.textContent = 'You';
+        name.classList.add('you-name');
+        avatar.classList.add('you-avatar');
+      }
+
+      user.append(avatar, name)
+      list.appendChild(user);
+    })
   }
 
-  showMessage() {
+  creatMessage(data) {
+    const message = document.createElement('div');
+    const name = document.createElement('div');
+    const date = document.createElement('div');
+    const text = document.createElement('div');
+
+    message.classList.add('message');
+    date.classList.add('date');
+    text.classList.add('text');
+    name.classList.add('small-name');
+
+    date.textContent = data.date;
+    name.textContent = data.user;
+    text.textContent = data.message;
+
+    if(data.user === this.curentUser) {
+      message.classList.add('you-message');
+      name.textContent = 'You';
+    }
+
+    message.append(name, date, text);
+    return message
+  }
+
+  showMessage(data) {
+    const box =  document.querySelector('.messages');
+    const message = this.creatMessage(data)
+    box.appendChild(message)
 
   }
 
@@ -104,7 +187,7 @@ export default class Widget {
     error.textContent = `${text}`;
 
     document.body.appendChild(error);
-    const { top, left } = target.getBoundingClientRect();
+    const {top, left} = target.getBoundingClientRect();
     error.style.top = `${window.scrollY + top - target.offsetHeight + error.offsetHeight}px`;
     error.style.left = `${window.scrollX + left}px`;
   }

@@ -48,10 +48,17 @@
 
 .list-part {
   width: 30%;
+  height: 400px;
   padding: 30px;
   box-sizing: border-box;
   border: 1px solid gray;
   border-radius: 10px 0 0 10px;
+  overflow: auto;
+}
+
+.welcome {
+  text-align: center;
+  color: goldenrod;
 }
 
 .chat {
@@ -62,7 +69,73 @@
   border-radius: 0 10px 10px 0;
 }
 
+.messages {
+  height: 660px;
+  overflow: auto;
+}
+
 .input {
   width: 90%;
   height: 25px;
+  padding: 5px;
 }
+
+.user {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.avatar{
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: 1px solid gray;
+}
+
+.name {
+  width: 80%;
+  padding-top: 20px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.you-name {
+  color: palevioletred;
+}
+
+.you-avatar {
+  border: 1px solid palevioletred;
+}
+
+.message {
+  display: flex;
+  flex-wrap: wrap;
+  width: 75%;
+  border: 1px solid green;
+  border-radius: 10px;
+  padding: 5px;
+  box-sizing: border-box;
+  margin-bottom: 10px;
+}
+
+.you-message {
+  border: 1px solid palevioletred;
+  color: palevioletred;
+  float: right;
+}
+
+.small-name {
+  width: 15%;
+}
+
+.date {
+  width: 85%;
+}
+
+.text {
+  margin-top: 10px;
+  width: 100%;
+}
+
+
